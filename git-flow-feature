@@ -191,6 +191,32 @@ parse_remote_name() {
 	BRANCH=$PREFIX$NAME
 }
 
+cmd_make_db() {
+	DB_AUTH='-hmasterdb -uroot -p'
+	DB_DUMP_FILE="$NAME.sql"
+	CREATE_DB_SQL="CREATE DATABASE $NAME; USE $NAME; GRANT ALL PRIVILEGES ON $NAME.* TO 'qualvu'@'%'; GRANT ALL PRIVILEGES ON $NAME.* TO 'qvreadonly'@'%';"
+
+	echo "creating database dump...";
+	mysqldump master --routines $DB_AUTH | /bin/bzip2 > $DB_DUMP_FILE; 
+	echo "done!";
+
+	echo 'Creating new database and configuring permissions...';
+	mysql $DB_AUTH --execute "$CREATE_DB_SQL";
+	echo "done!";
+
+	echo 'Sourcing new database...';
+	/bin/bzcat $DB_DUMP_FILE | bar | mysql $NAME $DB_AUTH;
+	echo "done!";
+
+	rm $DB_DUMP_FILE;
+}
+
+cmd_make_sql_file() {
+	sqlFileName=sql/$NAME;
+	touch $sqlFileName;
+	git add $sqlFileName;
+}
+
 cmd_start() {
 	DEFINE_boolean fetch false 'fetch from origin before performing local operation' F
 	parse_args "$@"
@@ -199,6 +225,21 @@ cmd_start() {
 
 	# sanity checks
 	require_branch_absent "$BRANCH"
+	
+	#database setup
+	read -p "Do you need a database? (y/n) " needDB 
+	case $needDB in
+		[Yy]* ) cmd_make_db; break;;
+		[Nn]* ) exit;;
+		* ) echo "Please answer yes or no."; exit;;
+	esac
+
+	if [ $needDB -eq "[Yy]"]; then
+		echo "yarb";
+		cmd_make_sql_file;
+		exit;
+	fi
+
 
 	# update the local repo with remote changes, if asked
 	if flag fetch; then
@@ -220,6 +261,10 @@ cmd_start() {
 	echo "Summary of actions:"
 	echo "- A new branch '$BRANCH' was created, based on '$BASE'"
 	echo "- You are now on branch '$BRANCH'"
+	if [ $needDB -eq "[Yy]"]; then
+		echo "- A new database: '$BRANCH' was created, based on master"
+		echo "- A new sql file: $sqlFileName was created to store your migrations."
+	fi
 	echo ""
 	echo "Now, start committing on your feature. When done, use:"
 	echo ""
