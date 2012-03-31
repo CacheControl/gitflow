@@ -191,13 +191,17 @@ parse_remote_name() {
 	BRANCH=$PREFIX$NAME
 }
 
-cmd_make_db() {
+db_auth_init() {
 	DB_AUTH='-hmasterdb -uroot -p'
+}
+
+make_db() {
+	db_auth_init
 	DB_DUMP_FILE="$NAME.sql"
 	CREATE_DB_SQL="CREATE DATABASE $NAME; USE $NAME; GRANT ALL PRIVILEGES ON $NAME.* TO 'qualvu'@'%'; GRANT ALL PRIVILEGES ON $NAME.* TO 'qvreadonly'@'%';"
 
 	echo "creating database dump...";
-	mysqldump master --routines $DB_AUTH | /bin/bzip2 > $DB_DUMP_FILE; 
+	mysqldump live_db --routines $DB_AUTH | /bin/bzip2 > $DB_DUMP_FILE; 
 	echo "done!";
 
 	echo 'Creating new database and configuring permissions...';
@@ -211,10 +215,37 @@ cmd_make_db() {
 	rm $DB_DUMP_FILE;
 }
 
-cmd_make_sql_file() {
+make_sql_file() {
 	sqlFileName=sql/$NAME;
 	touch $sqlFileName;
 	git add $sqlFileName;
+}
+
+source_sql_on_db() {
+	db_auth_init
+	if [ -z "$1" ] then
+		echo "Must provide a sql file"
+		exit
+	fi
+	if [ -z "$2" ] then
+		echo "Must provide a database to source on"
+		exit
+	fi
+
+	mysql $DB_AUTH $2 < $1
+}
+drop_db_if_exists() {
+	db_auth_init
+
+	if [ -z "$1" ] then
+		echo "Must provide a database to drop"
+		exit
+	fi
+	if [ $1 == "qualvu" || $1 == "master" || $1 == "live_db" ]
+		echo "Protected database name - drop not permitted"
+		exit
+	fi
+	mysql $DB_AUTH --execute "DROP DATABASE IF EXISTS $1"
 }
 
 cmd_start() {
@@ -229,14 +260,14 @@ cmd_start() {
 	#database setup
 	read -p "Do you need a database? (y/n) " needDB 
 	case $needDB in
-		[Yy]* ) cmd_make_db; break;;
+		[Yy]* ) make_db; break;;
 		[Nn]* ) exit;;
 		* ) echo "Please answer yes or no."; exit;;
 	esac
 
 	if [ $needDB -eq "[Yy]"]; then
 		echo "yarb";
-		cmd_make_sql_file;
+		make_sql_file;
 		exit;
 	fi
 
@@ -378,6 +409,18 @@ cmd_finish() {
 
 	# when no merge conflict is detected, just clean up the feature branch
 	helper_finish_cleanup
+
+	#source sql on database
+	sqlFileName = sql/$NAME
+	if [ -f $sqlFileName ] then
+		echo "Sourcing $sqlFileName on master..."
+		source_sql_on_db "$sqlFileName" 'master'
+		echo "done!"
+
+		echo "Dropping database..."
+		drop_db_if_exists $NAME
+		echo "done!"
+	fi
 }
 
 helper_finish_cleanup() {
