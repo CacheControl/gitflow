@@ -219,13 +219,12 @@ make_sql_file() {
 	sqlFileName=sql/$NAME.sql;
 	touch $sqlFileName;
 	git add $sqlFileName;
-	echo "Created sql file: $sqlFileName";
 }
 
 source_sql_on_db() {
 	db_auth_init
 	if [ -z "$1" ]; then
-		echo "Must provide a sql file";
+		echo "Must provide a sql file: $1 DNE";
 		exit;
 	fi
 	if [ -z "$2" ]; then
@@ -242,7 +241,7 @@ drop_db_if_exists() {
 		echo "Must provide a database to drop";
 		exit;
 	fi
-	if [ $1 == "qualvu" || $1 == "master" || $1 == "live_db" ]; then
+	if [ "$1" = "qualvu" ] || [ "$1" = "master" ] || [ "$1" = "live_db" ]; then
 		echo "Protected database name - drop not permitted";
 		exit;
 	fi
@@ -257,16 +256,16 @@ cmd_start() {
 
 	# sanity checks
 	require_branch_absent "$BRANCH"
-	
+
 	#database setup
 	read -p "Do you need a database? (y/n) " needDB 
 	case $needDB in
-		[y]* ) make_db; break;;
-		[n]* ) exit;;
+		[yY]* ) make_db; break;;
+		[nN]* ) break;;
 		* ) echo "Please answer y or n."; exit;;
 	esac
 
-	if [ "$needDB" = 'y' ]; then
+	if [ "$needDB" = 'y' ] || [ "$needDB" = 'Y' ]; then
 		make_sql_file;
     fi
 
@@ -274,7 +273,6 @@ cmd_start() {
 	if flag fetch; then
 		git fetch -q "$ORIGIN" "$DEVELOP_BRANCH"
 	fi
-
 	# if the origin branch counterpart exists, assert that the local branch
 	# isn't behind it (to avoid unnecessary rebasing)
 	if git_branch_exists "$ORIGIN/$DEVELOP_BRANCH"; then
@@ -290,7 +288,7 @@ cmd_start() {
 	echo "Summary of actions:"
 	echo "- A new branch '$BRANCH' was created, based on '$BASE'"
 	echo "- You are now on branch '$BRANCH'"
-	if [ $needDB -eq "[Yy]"]; then
+	if [ "$needDB" = 'y' ] || [ "$needDB" = 'Y' ]; then
 		echo "- A new database: '$BRANCH' was created, based on master"
 		echo "- A new sql file: $sqlFileName was created to store your migrations."
 	fi
@@ -311,6 +309,7 @@ cmd_finish() {
 
 	# sanity checks
 	require_branch "$BRANCH"
+	
 
 	# detect if we're restoring from a merge conflict
 	if [ -f "$DOT_GIT_DIR/.gitflow/MERGE_BASE" ]; then
@@ -409,7 +408,7 @@ cmd_finish() {
 	helper_finish_cleanup
 
 	#source sql on database
-	sqlFileName = sql/$NAME
+	sqlFileName=sql/$NAME.sql
 	if [ -f $sqlFileName ]; then
 		echo "Sourcing $sqlFileName on master...";
 		source_sql_on_db "$sqlFileName" 'master';
