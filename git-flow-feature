@@ -192,7 +192,7 @@ parse_remote_name() {
 }
 
 db_auth_init() {
-	DB_AUTH='-hmasterdb -uroot -p'
+	DB_AUTH='-hmasterdb -uroot -pm0nst3r'
 }
 
 make_db() {
@@ -201,7 +201,7 @@ make_db() {
 	CREATE_DB_SQL="CREATE DATABASE $NAME; USE $NAME; GRANT ALL PRIVILEGES ON $NAME.* TO 'qualvu'@'%'; GRANT ALL PRIVILEGES ON $NAME.* TO 'qvreadonly'@'%';"
 
 	echo "creating database dump...";
-	mysqldump live_db --routines $DB_AUTH | /bin/bzip2 > $DB_DUMP_FILE; 
+	mysqldump test --routines $DB_AUTH | /bin/bzip2 > $DB_DUMP_FILE; 
 	echo "done!";
 
 	echo 'Creating new database and configuring permissions...';
@@ -223,13 +223,13 @@ make_sql_file() {
 
 source_sql_on_db() {
 	db_auth_init
-	if [ -z "$1" ] then
-		echo "Must provide a sql file"
-		exit
+	if [ -z "$1" ]; then
+		echo "Must provide a sql file";
+		exit;
 	fi
-	if [ -z "$2" ] then
-		echo "Must provide a database to source on"
-		exit
+	if [ -z "$2" ]; then
+		echo "Must provide a database to source on";
+		exit;
 	fi
 
 	mysql $DB_AUTH $2 < $1
@@ -237,13 +237,13 @@ source_sql_on_db() {
 drop_db_if_exists() {
 	db_auth_init
 
-	if [ -z "$1" ] then
-		echo "Must provide a database to drop"
-		exit
+	if [ -z "$1" ]; then
+		echo "Must provide a database to drop";
+		exit;
 	fi
-	if [ $1 == "qualvu" || $1 == "master" || $1 == "live_db" ]
-		echo "Protected database name - drop not permitted"
-		exit
+	if [ $1 == "qualvu" || $1 == "master" || $1 == "live_db" ]; then
+		echo "Protected database name - drop not permitted";
+		exit;
 	fi
 	mysql $DB_AUTH --execute "DROP DATABASE IF EXISTS $1"
 }
@@ -265,11 +265,17 @@ cmd_start() {
 		* ) echo "Please answer yes or no."; exit;;
 	esac
 
-	if [ $needDB -eq "[Yy]"]; then
-		echo "yarb";
-		make_sql_file;
-		exit;
+	#if [ $needDB -eq "[Yy]"]; then
+	#	echo "yarb";
+	#	make_sql_file;
+#		exit;
+#	fi
+
+	if [ "cheese" == "cheese" ]; then
+		echo "usually";
 	fi
+
+	exit;
 
 
 	# update the local repo with remote changes, if asked
@@ -412,14 +418,14 @@ cmd_finish() {
 
 	#source sql on database
 	sqlFileName = sql/$NAME
-	if [ -f $sqlFileName ] then
-		echo "Sourcing $sqlFileName on master..."
-		source_sql_on_db "$sqlFileName" 'master'
-		echo "done!"
+	if [ -f $sqlFileName ]; then
+		echo "Sourcing $sqlFileName on master...";
+		source_sql_on_db "$sqlFileName" 'master';
+		echo "done!";
 
-		echo "Dropping database..."
-		drop_db_if_exists $NAME
-		echo "done!"
+		echo "Dropping database...";
+		drop_db_if_exists $NAME;
+		echo "done!";
 	fi
 }
 
