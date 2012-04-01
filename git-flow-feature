@@ -197,7 +197,7 @@ db_auth_init() {
 
 make_db() {
 	db_auth_init
-	DB_DUMP_FILE="$NAME.sql"
+	DB_DUMP_FILE="$NAME_dump.sql"
 	CREATE_DB_SQL="CREATE DATABASE $NAME; USE $NAME; GRANT ALL PRIVILEGES ON $NAME.* TO 'qualvu'@'%'; GRANT ALL PRIVILEGES ON $NAME.* TO 'qvreadonly'@'%';"
 
 	echo "creating database dump...";
@@ -216,9 +216,10 @@ make_db() {
 }
 
 make_sql_file() {
-	sqlFileName=sql/$NAME;
+	sqlFileName=sql/$NAME.sql;
 	touch $sqlFileName;
 	git add $sqlFileName;
+	echo "Created sql file: $sqlFileName";
 }
 
 source_sql_on_db() {
@@ -260,23 +261,14 @@ cmd_start() {
 	#database setup
 	read -p "Do you need a database? (y/n) " needDB 
 	case $needDB in
-		[Yy]* ) make_db; break;;
-		[Nn]* ) exit;;
-		* ) echo "Please answer yes or no."; exit;;
+		[y]* ) make_db; break;;
+		[n]* ) exit;;
+		* ) echo "Please answer y or n."; exit;;
 	esac
 
-	#if [ $needDB -eq "[Yy]"]; then
-	#	echo "yarb";
-	#	make_sql_file;
-#		exit;
-#	fi
-
-	if [ "cheese" == "cheese" ]; then
-		echo "usually";
-	fi
-
-	exit;
-
+	if [ "$needDB" = 'y' ]; then
+		make_sql_file;
+    fi
 
 	# update the local repo with remote changes, if asked
 	if flag fetch; then
