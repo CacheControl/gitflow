@@ -257,17 +257,11 @@ cmd_start() {
 	# sanity checks
 	require_branch_absent "$BRANCH"
 
-	#database setup
-	read -p "Do you need a database? (y/n) " needDB 
-	case $needDB in
-		[yY]* ) make_db; break;;
-		[nN]* ) break;;
-		* ) echo "Please answer y or n."; exit;;
-	esac
-
-	if [ "$needDB" = 'y' ] || [ "$needDB" = 'Y' ]; then
-		make_sql_file;
-    fi
+	read -p "Do you need a database? (y/n) " needDB
+	if [ "$needDB" != 'y' ] && [ "$needDB" != 'n' ]; then
+		echo "Please enter y or n";
+		exit 1;
+	fi
 
 	# update the local repo with remote changes, if asked
 	if flag fetch; then
@@ -283,12 +277,18 @@ cmd_start() {
 	if ! git checkout -b "$BRANCH" "$BASE"; then
 		die "Could not create feature branch '$BRANCH'"
 	fi
+	
+	if [ "$needDB" = 'y' ]; then
+		echo "Branch created!  Database creation in progress..."
+		make_db;
+		make_sql_file;
+    fi
 
 	echo
 	echo "Summary of actions:"
 	echo "- A new branch '$BRANCH' was created, based on '$BASE'"
 	echo "- You are now on branch '$BRANCH'"
-	if [ "$needDB" = 'y' ] || [ "$needDB" = 'Y' ]; then
+	if [ "$needDB" = 'y' ]; then
 		echo "- A new database: '$BRANCH' was created, based on master"
 		echo "- A new sql file: $sqlFileName was created to store your migrations."
 	fi
