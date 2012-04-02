@@ -200,17 +200,15 @@ make_db() {
 	DB_DUMP_FILE="$NAME_dump.sql"
 	CREATE_DB_SQL="CREATE DATABASE $NAME; USE $NAME; GRANT ALL PRIVILEGES ON $NAME.* TO 'qualvu'@'%'; GRANT ALL PRIVILEGES ON $NAME.* TO 'qvreadonly'@'%';"
 
-	echo "creating database dump...";
-	mysqldump test --routines $DB_AUTH | /bin/bzip2 > $DB_DUMP_FILE; 
-	echo "done!";
+	echo "Creating database dump...";
+	mysqldump test --routines $DB_AUTH > $DB_DUMP_FILE; 
 
-	echo 'Creating new database and configuring permissions...';
+	echo 'Creating new database...';
+	echo 'Configuring permissions...';
 	mysql $DB_AUTH --execute "$CREATE_DB_SQL";
-	echo "done!";
 
 	echo 'Sourcing new database...';
-	/bin/bzcat $DB_DUMP_FILE | bar | mysql $NAME $DB_AUTH;
-	echo "done!";
+	bar $DB_DUMP_FILE | mysql $NAME $DB_AUTH;
 
 	rm $DB_DUMP_FILE;
 }
@@ -262,6 +260,7 @@ cmd_start() {
 		echo "Please enter y or n";
 		exit 1;
 	fi
+	echo "Creating branch..."
 
 	# update the local repo with remote changes, if asked
 	if flag fetch; then
@@ -279,7 +278,6 @@ cmd_start() {
 	fi
 	
 	if [ "$needDB" = 'y' ]; then
-		echo "Branch created!  Database creation in progress..."
 		make_db;
 		make_sql_file;
     fi
