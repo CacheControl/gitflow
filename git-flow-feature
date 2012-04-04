@@ -323,7 +323,7 @@ cmd_start() {
 		die "Could not create feature branch '$BRANCH'"
 	fi
 	
-	if [ $blnNeedDB ]; then
+	if $blnNeedDB; then
 		BRANCH_DB_NAME=$(get_db_name_from_branch $BRANCH);
 		make_db $BRANCH_DB_NAME;
 		make_sql_file $BRANCH_DB_NAME;
@@ -354,7 +354,7 @@ cmd_finish() {
 
 	# sanity checks
 	require_branch "$BRANCH"
-
+	
 	#verify this isn't an epic branch, and if so prompt user to verify
 	if [ ! -z `echo $BRANCH | grep ^feature/epic/` ]; then
 		read -p "This is an EPIC branch, all stories for this epic must be complete.  Are you SURE you want to FINISH it? (y/n)" doFinish;
@@ -461,13 +461,15 @@ cmd_finish() {
 	helper_finish_cleanup
 
 	#source sql on database
-	sqlFileName=sql/$NAME.sql
+	BRANCH_DB_NAME=$(get_db_name_from_branch $BRANCH);
+	sqlFileName=sql/$BRANCH_DB_NAME.sql
 	if [ -f $sqlFileName ]; then
 		echo "Sourcing $sqlFileName on master...";
 		source_sql_on_db "$sqlFileName" 'master';
 	fi
-	echo "Dropping database...";
-	drop_db_if_exists $NAME;
+	echo "Dropping database...{$BRANCH_DB_NAME}";
+	drop_db_if_exists $BRANCH_DB_NAME;
+	exit;
 }
 
 helper_finish_cleanup() {
