@@ -323,7 +323,7 @@ cmd_start() {
 		die "Could not create feature branch '$BRANCH'"
 	fi
 	
-	if [ "$needDB" = 'y' ]; then
+	if [ $blnNeedDB ]; then
 		BRANCH_DB_NAME=$(get_db_name_from_branch $BRANCH);
 		make_db $BRANCH_DB_NAME;
 		make_sql_file $BRANCH_DB_NAME;
@@ -354,7 +354,15 @@ cmd_finish() {
 
 	# sanity checks
 	require_branch "$BRANCH"
-	
+
+	#verify this isn't an epic branch, and if so prompt user to verify
+	if [ ! -z `echo $BRANCH | grep ^feature/epic/` ]; then
+		read -p "This is an EPIC branch, all stories for this epic must be complete.  Are you SURE you want to FINISH it? (y/n)" doFinish;
+		if [ $doFinish = 'n' ] ; then 
+			echo "exiting.";
+			exit 1;
+		fi
+    fi
 
 	# detect if we're restoring from a merge conflict
 	if [ -f "$DOT_GIT_DIR/.gitflow/MERGE_BASE" ]; then
