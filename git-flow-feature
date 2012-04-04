@@ -194,11 +194,24 @@ parse_remote_name() {
 db_auth_init() {
 	DB_AUTH='-hmasterdb -uroot -pm0nst3r'
 }
+get_db_name_from_branch() {
+	if [ -z "$1" ]; then
+		echo "Must provide a branch name: $1 DNE";
+		exit;
+	fi
+	echo $1 | sed "s#/#_#g"
+}
 
 make_db() {
 	db_auth_init
-	DB_DUMP_FILE="$NAME_dump.sql"
-	CREATE_DB_SQL="CREATE DATABASE $NAME; USE $NAME; GRANT ALL PRIVILEGES ON $NAME.* TO 'qualvu'@'%'; GRANT ALL PRIVILEGES ON $NAME.* TO 'qvreadonly'@'%';"
+	
+	if [ -z "$1" ]; then
+		echo "Must provide a database name: $1 DNE";
+		exit;
+	fi
+	DB_NAME=$1;
+	DB_DUMP_FILE="$DB_NAME_dump.sql"
+	CREATE_DB_SQL="CREATE DATABASE $DB_NAME; USE $DB_NAME; GRANT ALL PRIVILEGES ON $DB_NAME.* TO 'qualvu'@'%'; GRANT ALL PRIVILEGES ON $DB_NAME.* TO 'qvreadonly'@'%';"
 
 	echo "Creating database dump...";
 	mysqldump test --routines $DB_AUTH > $DB_DUMP_FILE; 
@@ -208,13 +221,17 @@ make_db() {
 	mysql $DB_AUTH --execute "$CREATE_DB_SQL";
 
 	echo 'Sourcing new database...';
-	bar $DB_DUMP_FILE | mysql $NAME $DB_AUTH;
+	bar $DB_DUMP_FILE | mysql $DB_NAME $DB_AUTH;
 
 	rm $DB_DUMP_FILE;
 }
 
 make_sql_file() {
-	sqlFileName=sql/$NAME.sql;
+	if [ -z "$1" ]; then
+		echo "Must provide a sql filename: $1 DNE";
+		exit;
+	fi
+	sqlFileName=sql/$1.sql;
 	touch $sqlFileName;
 	git add $sqlFileName;
 }
@@ -229,8 +246,10 @@ source_sql_on_db() {
 		echo "Must provide a database to source on";
 		exit;
 	fi
+	$SQL_FILE=$1;
+	$TARGET_DB=$2;
 
-	mysql $DB_AUTH $2 < $1
+	mysql $DB_AUTH $TARGET_DB < $SQL_FILE;
 }
 drop_db_if_exists() {
 	db_auth_init
@@ -252,16 +271,43 @@ cmd_start() {
 	BASE=${2:-$DEVELOP_BRANCH}
 	require_name_arg
 
-	# sanity checks
-	require_branch_absent "$BRANCH"
-
 	read -p "Do you need a database? (y/n) " needDB
-	if [ "$needDB" != 'y' ] && [ "$needDB" != 'n' ]; then
+	if [ "$needDB" = 'y' ]; then
+		blnNeedDB=true;
+	elif [ "$needDB" = 'n' ]; then
+		blnNeedDB=false;
+	else
 		echo "Please enter y or n";
 		exit 1;
 	fi
-	echo "Creating branch..."
+	read -p "Is this story an epic(involves multiple PT stories)? (y/n) " isEpic
+	if [ "$isEpic" = 'y' ]; then
+		ptText="What is the pivotal tracker id of primary story in this epic? ";
+		blnIsEpic=true;
+	elif [ "$isEpic" = 'n' ]; then
+		ptText="What is the pivotal tracker id of this story? ";
+		blnIsEpic=false;
+	else
+		echo "Please enter y or n";
+		exit 1;
+	fi
+	echo $ptText;
+	read ptId;
+	if [[ ! $ptId =~ ^[0-9]+$ ]] ; then
+		echo "Invalid Pivotal Tracker Id";
+		exit 1;
+	fi
 
+	BRANCH=$PREFIX;
+	if $blnIsEpic ; then
+		BRANCH=$BRANCH"epic/"
+	fi
+	BRANCH=$BRANCH$ptId"/"$@
+
+	# sanity checks
+	require_branch_absent "$BRANCH"
+
+	echo "Creating branch..."
 	# update the local repo with remote changes, if asked
 	if flag fetch; then
 		git fetch -q "$ORIGIN" "$DEVELOP_BRANCH"
@@ -278,8 +324,9 @@ cmd_start() {
 	fi
 	
 	if [ "$needDB" = 'y' ]; then
-		make_db;
-		make_sql_file;
+		BRANCH_DB_NAME=$(get_db_name_from_branch $BRANCH);
+		make_db $BRANCH_DB_NAME;
+		make_sql_file $BRANCH_DB_NAME;
     fi
 
 	echo
@@ -298,8 +345,8 @@ cmd_start() {
 }
 
 cmd_finish() {
-	DEFINE_boolean fetch false "fetch from $ORIGIN before performing finish" F
-	DEFINE_boolean rebase false "rebase instead of merge" r
+	DEFINE_boolean fetch true "fetch from $ORIGIN before performing finish" F
+	DEFINE_boolean rebase true "rebase instead of merge" r
 	DEFINE_boolean keep false "keep branch after performing finish" k
 	DEFINE_boolean force_delete false "force delete feature branch after finish" D
 	parse_args "$@"
@@ -410,12 +457,9 @@ cmd_finish() {
 	if [ -f $sqlFileName ]; then
 		echo "Sourcing $sqlFileName on master...";
 		source_sql_on_db "$sqlFileName" 'master';
-		echo "done!";
-
-		echo "Dropping database...";
-		drop_db_if_exists $NAME;
-		echo "done!";
 	fi
+	echo "Dropping database...";
+	drop_db_if_exists $NAME;
 }
 
 helper_finish_cleanup() {
