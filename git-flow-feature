@@ -214,7 +214,7 @@ make_db() {
 	CREATE_DB_SQL="CREATE DATABASE $DB_NAME; USE $DB_NAME; GRANT ALL PRIVILEGES ON $DB_NAME.* TO 'qualvu'@'%'; GRANT ALL PRIVILEGES ON $DB_NAME.* TO 'qvreadonly'@'%';"
 
 	echo "Creating database dump...";
-	mysqldump test --routines $DB_AUTH > $DB_DUMP_FILE; 
+	mysqldump master --routines $DB_AUTH > $DB_DUMP_FILE; 
 
 	echo 'Creating new database...';
 	echo 'Configuring permissions...';
