@@ -512,7 +512,8 @@ cmd_publish() {
 	require_clean_working_tree
 	require_branch "$BRANCH"
 	git fetch -q "$ORIGIN"
-	require_branch_absent "$ORIGIN/$BRANCH"
+	#CDH - removing because I don't like one-time use tasks
+	#require_branch_absent "$ORIGIN/$BRANCH"
 
 	# create remote branch
 	git push "$ORIGIN" "$BRANCH:refs/heads/$BRANCH"
@@ -524,10 +525,7 @@ cmd_publish() {
 	git checkout "$BRANCH"
 
 	echo
-	echo "Summary of actions:"
-	echo "- A new remote branch '$BRANCH' was created"
-	echo "- The local branch '$BRANCH' was configured to track the remote branch"
-	echo "- You are now on branch '$BRANCH'"
+	echo "'$BRANCH' has been pushed to origin"
 	echo
 }
 
