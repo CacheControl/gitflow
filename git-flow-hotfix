@@ -124,8 +124,10 @@ parse_args() {
 	FLAGS "$@" || exit $?
 	eval set -- "${FLAGS_ARGV}"
 
+	FIRST_ARG_CLEANSED=`echo $1 | sed 's#^hotfix\/##'` # allow copy/pasting from console
+	
 	# read arguments into global variables
-	VERSION=$1
+	VERSION=$FIRST_ARG_CLEANSED;
 	BRANCH=$PREFIX$VERSION
 }
 

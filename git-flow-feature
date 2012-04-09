@@ -175,8 +175,10 @@ parse_args() {
 	FLAGS "$@" || exit $?
 	eval set -- "${FLAGS_ARGV}"
 
+	FIRST_ARG_CLEANSED=`echo $1 | sed 's#^feature\/##'` # allow copy/pasting from console
+
 	# read arguments into global variables
-	NAME=$1
+	NAME=$FIRST_ARG_CLEANSED
 	BRANCH=$PREFIX$NAME
 }
 
