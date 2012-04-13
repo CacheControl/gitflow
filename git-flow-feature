@@ -532,7 +532,8 @@ cmd_publish() {
 	#require_branch_absent "$ORIGIN/$BRANCH"
 
 	# create remote branch
-	git push "$ORIGIN" "$BRANCH:refs/heads/$BRANCH"
+	git push "$ORIGIN" "$BRANCH:refs/heads/$BRANCH" || \
+			die "Could not push $BRANCH to $ORIGIN.  Try running a pull."
 	git fetch -q "$ORIGIN"
 
 	# configure remote tracking

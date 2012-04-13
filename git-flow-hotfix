@@ -196,10 +196,11 @@ cmd_publish() {
 	require_clean_working_tree
 	require_branch "$BRANCH"
 	git fetch -q "$ORIGIN"
-	require_branch_absent "$ORIGIN/$BRANCH"
+	# require_branch_absent "$ORIGIN/$BRANCH" CDH - I don't like one-time use features - allow publishing at any time
 
 	# create remote branch
-	git push "$ORIGIN" "$BRANCH:refs/heads/$BRANCH"
+	git push "$ORIGIN" "$BRANCH:refs/heads/$BRANCH" || \
+			die "Could not push $BRANCH to $ORIGIN.  Try running a pull."
 	git fetch -q "$ORIGIN"
 
 	# configure remote tracking
@@ -208,10 +209,7 @@ cmd_publish() {
 	git checkout "$BRANCH"
 
 	echo
-	echo "Summary of actions:"
-	echo "- A new remote branch '$BRANCH' was created"
-	echo "- The local branch '$BRANCH' was configured to track the remote branch"
-	echo "- You are now on branch '$BRANCH'"
+	echo "- '$BRANCH' was pushed to $ORIGIN"
 	echo
 }
 
@@ -220,7 +218,7 @@ cmd_finish() {
 	DEFINE_boolean sign false "sign the release tag cryptographically" s
 	DEFINE_string signingkey "" "use the given GPG-key for the digital signature (implies -s)" u
 	DEFINE_string message "" "use the given tag message" m
-	DEFINE_boolean push false "push to $ORIGIN after performing finish" p
+	DEFINE_boolean push true "push to $ORIGIN after performing finish" p
 	DEFINE_boolean keep false "keep branch after performing finish" k
 	DEFINE_boolean notag true "don't tag this release" n
 	parse_args "$@"
@@ -253,6 +251,10 @@ cmd_finish() {
 	if ! git_is_branch_merged_into "$BRANCH" "$MASTER_BRANCH"; then
 		git checkout "$MASTER_BRANCH" || \
 		  die "Could not check out $MASTER_BRANCH."
+		if ! git pull --rebase -q "$ORIGIN" "$MASTER_BRANCH"; then
+			warn "Pull FAILED.";
+			exit 1;
+		fi
 		git merge --no-ff "$BRANCH" || \
 		  die "There were merge conflicts."
 		  # TODO: What do we do now?
@@ -280,6 +282,11 @@ cmd_finish() {
 		git checkout "$DEVELOP_BRANCH" || \
 		  die "Could not check out $DEVELOP_BRANCH."
 
+		if ! git pull --rebase -q "$ORIGIN" "$DEVELOP_BRANCH"; then
+			warn "Pull FAILED.";
+			exit 1;
+		fi
+
 		# TODO: Actually, accounting for 'git describe' pays, so we should
 		# ideally git merge --no-ff $tagname here, instead!
 		git merge --no-ff "$BRANCH" || \
@@ -289,6 +296,7 @@ cmd_finish() {
 
 	# delete branch
 	if noflag keep; then
+		git checkout "$MASTER_BRANCH"
 		git branch -d "$BRANCH"
 	fi
 
@@ -317,7 +325,7 @@ cmd_finish() {
 		echo "- Hotfix branch '$BRANCH' has been deleted"
 	fi
 	if flag push; then
-		echo "- '$DEVELOP_BRANCH', '$MASTER_BRANCH' and tags have been pushed to '$ORIGIN'"
+		echo "- '$DEVELOP_BRANCH' and '$MASTER_BRANCH' have been pushed to '$ORIGIN'"
 	fi
 	echo
 }
