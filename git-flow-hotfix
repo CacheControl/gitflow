@@ -162,10 +162,20 @@ cmd_start() {
 	require_version_arg
 	require_base_is_on_master
 	require_no_existing_hotfix_branches
-
-	# sanity checks
 	require_clean_working_tree
+	
+	echo "What is the pivotal tracker id of this hotfix? ";
+	read ptId;
+	if [[ ! $ptId =~ ^[0-9]+$ ]] ; then
+		echo "Invalid Pivotal Tracker Id";
+		exit 1;
+	fi
+
+	BRANCH=$PREFIX$ptId/$@
+	
+	# sanity checks
 	require_branch_absent "$BRANCH"
+	
 	require_tag_absent "$VERSION_PREFIX$VERSION"
 	if flag fetch; then
 		git fetch -q "$ORIGIN" "$MASTER_BRANCH"
