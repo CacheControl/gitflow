@@ -44,9 +44,9 @@ PREFIX=$(git config --get gitflow.prefix.hotfix)
 
 usage() {
 	echo "usage: git flow hotfix [list] [-v]"
-	echo "       git flow hotfix start [-F] <version> [<base>]"
-	echo "       git flow hotfix finish [-Fsumpk] <version>"
-	echo "       git flow hotfix publish <version>"
+	echo "       git flow hotfix start [-F] <bugname> [<base>]"
+	echo "       git flow hotfix finish [-Fsumpk] <bugname>"
+	echo "       git flow hotfix publish <bugname>"
 }
 
 cmd_default() {
@@ -66,7 +66,7 @@ cmd_list() {
                 warn ""
                 warn "You can start a new hotfix branch:"
                 warn ""
-                warn "    git flow hotfix start <version> [<base>]"
+                warn "    git flow hotfix start <bugname> [<base>]"
                 warn ""
 		exit 0
 	fi
@@ -133,7 +133,7 @@ parse_args() {
 
 require_version_arg() {
 	if [ "$VERSION" = "" ]; then
-		warn "Missing argument <version>"
+		warn "Missing argument <bugname>"
 		usage
 		exit 1
 	fi
@@ -183,11 +183,8 @@ cmd_start() {
 	echo "- You are now on branch '$BRANCH'"
 	echo
 	echo "Follow-up actions:"
-	echo "- Bump the version number now!"
 	echo "- Start committing your hot fixes"
-	echo "- When done, run:"
-	echo
-	echo "     git flow hotfix finish '$VERSION'"
+	echo "- When done, publish and contact QA"
 	echo
 }
 

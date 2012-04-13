@@ -196,6 +196,7 @@ parse_remote_name() {
 db_auth_init() {
 	DB_AUTH='-hmasterdb -uroot -pm0nst3r'
 }
+
 get_db_name_from_branch() {
 	if [ -z "$1" ]; then
 		echo "Must provide a branch name: $1 DNE";
@@ -437,6 +438,10 @@ cmd_finish() {
 
 	# merge into BASE
 	git checkout "$DEVELOP_BRANCH"
+	if ! git pull --rebase -q "$ORIGIN" "$DEVELOP_BRANCH"; then
+		warn "Pull FAILED.";
+		exit 1;
+	fi
 	if [ "$(git rev-list -n2 "$DEVELOP_BRANCH..$BRANCH" | wc -l)" -eq 1 ]; then
 		git merge --ff "$BRANCH"
 	else
@@ -471,6 +476,15 @@ cmd_finish() {
 	fi
 	echo "Dropping database...{$BRANCH_DB_NAME}";
 	drop_db_if_exists $BRANCH_DB_NAME;
+	
+	#push BASE (master) to origin
+	if ! git push "$ORIGIN" "$DEVELOP_BRANCH:refs/heads/$DEVELOP_BRANCH"; then
+		warn "Pushing to origin FAILED!  Please run :"
+		warn "	git pull --rebase;"
+		warn "  git push $ORIGIN $DEVELOP_BRANCH:refs/heads/$DEVELOP_BRANCH"
+		exit 1
+	fi
+	echo "'$DEVELOP_BRANCH' pushed to $ORIGIN"
 	exit;
 }
 
