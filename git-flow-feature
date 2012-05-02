@@ -249,8 +249,8 @@ source_sql_on_db() {
 		echo "Must provide a database to source on";
 		exit;
 	fi
-	$SQL_FILE=$1;
-	$TARGET_DB=$2;
+	SQL_FILE=$1;
+	TARGET_DB=$2;
 
 	mysql $DB_AUTH $TARGET_DB < $SQL_FILE;
 }
