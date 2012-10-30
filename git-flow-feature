@@ -198,14 +198,6 @@ db_auth_init() {
 	DB_AUTH='-hmasterdb -uroot -pm0nst3r'
 }
 
-get_db_name_from_branch() {
-	if [ -z "$1" ]; then
-		echo "Must provide a branch name: $1 DNE";
-		exit;
-	fi
-	echo $1 | sed "s#/#_#g"
-}
-
 make_db() {
 	db_auth_init
 	
@@ -681,4 +673,7 @@ cmd_pull() {
 		git checkout -q "$BRANCH" || die "Checking out new local branch failed."
 		echo "Created local branch $BRANCH based on $REMOTE's $BRANCH."
 	fi
+}
+cmd_migrate() {
+  migrate_db $@
 }

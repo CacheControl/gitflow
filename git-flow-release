@@ -116,7 +116,7 @@ cmd_help() {
 }
 
 parse_args() {
-	# parse options
+  # parse options
 	FLAGS "$@" || exit $?
 	eval set -- "${FLAGS_ARGV}"
 
@@ -354,4 +354,8 @@ cmd_track() {
 	echo "- A new remote tracking branch '$BRANCH' was created"
 	echo "- You are now on branch '$BRANCH'"
 	echo
+}
+
+cmd_migrate() {
+  migrate_db $@
 }

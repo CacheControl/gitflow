@@ -316,3 +316,36 @@ require_branches_equal() {
 		fi
 	fi
 }
+
+migrate_db() {
+  parse_args "$@"
+  
+  current_branch=$(git branch --no-color | grep '^\* ' | grep -v 'no branch' | sed 's/^* //g')
+  BRANCH_DB_NAME=$(get_db_name_from_branch $current_branch);
+
+  read -p "Migrate which database? (default: $BRANCH_DB_NAME) " migrateDB
+	if [ -z "$migrateDB" ]; then
+		migrateDB=$BRANCH_DB_NAME
+	fi
+  
+  rake_cmd='rake db:migrate'
+  if [ $# -gt 0 ]; then
+    rake_cmd="$@"
+  fi
+
+  echo "Migrating against database: $migrateDB"
+  echo "Running command: $rake_cmd"
+  export DATABASE_URL="mysql2://migrate:migrate@masterdb/$migrateDB"
+  rails_dir=$(git rev-parse --show-toplevel)/htdocs-rails
+  cd $rails_dir
+
+  $rake_cmd
+}
+
+get_db_name_from_branch() {
+	if [ -z "$1" ]; then
+		echo "Must provide a branch name: $1 DNE";
+		exit;
+	fi
+	echo $1 | sed "s#/#_#g"
+}
