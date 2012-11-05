@@ -47,6 +47,7 @@ usage() {
 	echo "       git flow hotfix start [-F] <bugname> [<base>]"
 	echo "       git flow hotfix finish [-Fsumpk] <bugname>"
 	echo "       git flow hotfix publish <bugname>"
+	get_common_usage hotfix
 }
 
 cmd_default() {
@@ -339,4 +340,8 @@ cmd_finish() {
 		echo "- '$DEVELOP_BRANCH' and '$MASTER_BRANCH' have been pushed to '$ORIGIN'"
 	fi
 	echo
+}
+
+cmd_migrate() {
+  migrate_custom_db $@
 }

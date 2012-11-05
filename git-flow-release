@@ -48,6 +48,7 @@ usage() {
 	echo "       git flow release finish [-Fsumpk] <version>"
 	echo "       git flow release publish <name>"
 	echo "       git flow release track <name>"
+	get_common_usage release
 }
 
 cmd_default() {
@@ -357,5 +358,5 @@ cmd_track() {
 }
 
 cmd_migrate() {
-  migrate_db $@
+  migrate_custom_db $@
 }

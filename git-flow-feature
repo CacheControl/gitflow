@@ -46,7 +46,8 @@ usage() {
 	echo "       git flow feature start [-F] <name> [<base>]"
 	echo "       git flow feature finish [-rFkD] [<name|nameprefix>]"
 	echo "       git flow feature publish <name>"
-	echo "       git flow feature make_db 	#in case you realized too late you needed a database"
+	echo "       git flow feature make_db			#in case you realized too late you needed a database"
+	get_common_usage feature
 	echo "       git flow feature track <name>"
 	echo "       git flow feature diff [<name|nameprefix>]"
 	echo "       git flow feature rebase [-i] [<name|nameprefix>]"
@@ -222,31 +223,6 @@ make_db() {
 	rm $DB_DUMP_FILE;
 }
 
-make_sql_file() {
-	if [ -z "$1" ]; then
-		echo "Must provide a sql filename: $1 DNE";
-		exit;
-	fi
-	sqlFileName=sql/$1.sql;
-	touch $sqlFileName;
-	git add $sqlFileName;
-}
-
-source_sql_on_db() {
-	db_auth_init
-	if [ -z "$1" ]; then
-		echo "Must provide a sql file: $1 DNE";
-		exit;
-	fi
-	if [ -z "$2" ]; then
-		echo "Must provide a database to source on";
-		exit;
-	fi
-	SQL_FILE=$1;
-	TARGET_DB=$2;
-
-	mysql $DB_AUTH $TARGET_DB < $SQL_FILE;
-}
 drop_db_if_exists() {
 	db_auth_init
 
@@ -322,8 +298,7 @@ cmd_start() {
 	if $blnNeedDB; then
 		BRANCH_DB_NAME=$(get_db_name_from_branch $BRANCH);
 		make_db $BRANCH_DB_NAME;
-		make_sql_file $BRANCH_DB_NAME;
-    fi
+  fi
 
 	echo
 	echo "Summary of actions:"
@@ -346,7 +321,6 @@ cmd_make_db() {
 
 	BRANCH_DB_NAME=$(get_db_name_from_branch $BRANCH);
 	make_db $BRANCH_DB_NAME
-	make_sql_file $BRANCH_DB_NAME
 }
 
 cmd_finish() {
@@ -504,13 +478,12 @@ helper_finish_cleanup() {
 	echo
 	
 	#source sql on database
+  export MIGRATE_DB=master
+  #uncomment when rbac is merged in migrate_db  
+	
+  #drop database - no longer need it
 	BRANCH_DB_NAME=$(get_db_name_from_branch $BRANCH);
-	sqlFileName=sql/$BRANCH_DB_NAME.sql
-	if [ -f $sqlFileName ]; then
-		echo "Sourcing $sqlFileName on master...";
-		source_sql_on_db "$sqlFileName" 'master';
-	fi
-	echo "Dropping database...{$BRANCH_DB_NAME}";
+  echo "Dropping database...{$BRANCH_DB_NAME}";
 	drop_db_if_exists $BRANCH_DB_NAME;
 	
 	#push BASE (master) to origin
@@ -675,5 +648,5 @@ cmd_pull() {
 	fi
 }
 cmd_migrate() {
-  migrate_db $@
+  migrate_custom_db $@
 }
