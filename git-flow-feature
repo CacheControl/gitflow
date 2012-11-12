@@ -208,7 +208,7 @@ make_db() {
 	fi
 	DB_NAME=$1;
 	DB_DUMP_FILE="$DB_NAME_dump.sql"
-	CREATE_DB_SQL="CREATE DATABASE $DB_NAME; USE $DB_NAME; GRANT ALL PRIVILEGES ON $DB_NAME.* TO 'qualvu'@'%'; GRANT ALL PRIVILEGES ON $DB_NAME.* TO 'qvreadonly'@'%';"
+	CREATE_DB_SQL="DROP DATABASE IF EXISTS $DB_NAME; CREATE DATABASE $DB_NAME; USE $DB_NAME; GRANT ALL PRIVILEGES ON $DB_NAME.* TO 'qualvu'@'%'; GRANT ALL PRIVILEGES ON $DB_NAME.* TO 'qvreadonly'@'%';"
 
 	echo "Creating database dump...";
 	mysqldump master --routines $DB_AUTH > $DB_DUMP_FILE; 
@@ -216,8 +216,8 @@ make_db() {
 	echo 'Creating new database...';
 	echo 'Configuring permissions...';
 	mysql $DB_AUTH --execute "$CREATE_DB_SQL";
-
-	echo 'Sourcing new database...';
+	
+  echo 'Sourcing new database...';
 	bar $DB_DUMP_FILE | mysql $DB_NAME $DB_AUTH;
 
 	rm $DB_DUMP_FILE;
@@ -315,11 +315,16 @@ cmd_start() {
 	echo
 }
 
+#arg 1 is the database you which to build.  if arg 1 not provided, default to current branch
 cmd_make_db() {
 	parse_args "$@"
-	expand_nameprefix_arg_or_current
 
-	BRANCH_DB_NAME=$(get_db_name_from_branch $BRANCH);
+  if [ -z $1 ]; then
+	expand_nameprefix_arg_or_current
+  	BRANCH_DB_NAME=$(get_db_name_from_branch $BRANCH);
+  else
+    BRANCH_DB_NAME=$1
+  fi
 	make_db $BRANCH_DB_NAME
 }
 
