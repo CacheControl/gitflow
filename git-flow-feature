@@ -482,10 +482,6 @@ helper_finish_cleanup() {
 	echo "- You are now on branch '$DEVELOP_BRANCH'"
 	echo
 	
-	#source sql on database
-  export MIGRATE_DB=master
-  #uncomment when rbac is merged in migrate_db  
-	
   #drop database - no longer need it
 	BRANCH_DB_NAME=$(get_db_name_from_branch $BRANCH);
   echo "Dropping database...{$BRANCH_DB_NAME}";
@@ -499,6 +495,10 @@ helper_finish_cleanup() {
 		exit 1
 	fi
 	echo "'$DEVELOP_BRANCH' pushed to $ORIGIN"
+  
+  #finally, run migrations on master db
+  export MIGRATE_DB=master
+  migrate_db  
 }
 
 cmd_publish() {

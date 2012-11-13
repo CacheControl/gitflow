@@ -290,6 +290,13 @@ cmd_finish() {
 			die "Could not delete the remote $BRANCH in $ORIGIN."
 	fi
 
+  #finally, run migrations on prod and master dbs
+  export MIGRATE_DB=prod
+  migrate_db
+  
+  export MIGRATE_DB=master
+  migrate_db
+
 	echo
 	echo "Summary of actions:"
 	echo "- Latest objects have been fetched from '$ORIGIN'"
@@ -307,6 +314,7 @@ cmd_finish() {
 		echo "- '$DEVELOP_BRANCH' and '$MASTER_BRANCH' have been pushed to '$ORIGIN'"
 		echo "- Release branch '$BRANCH' in '$ORIGIN' has been deleted."
 	fi
+  echo "- Migrations run on prod and master databases"
 	echo
 }
 
