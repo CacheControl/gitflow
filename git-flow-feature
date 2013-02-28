@@ -208,7 +208,7 @@ make_db() {
 	fi
 	DB_NAME=$1;
 	DB_DUMP_FILE="$DB_NAME_dump.sql"
-	CREATE_DB_SQL="DROP DATABASE IF EXISTS $DB_NAME; CREATE DATABASE $DB_NAME; USE $DB_NAME; GRANT ALL PRIVILEGES ON $DB_NAME.* TO 'qualvu'@'%'; GRANT ALL PRIVILEGES ON $DB_NAME.* TO 'qvreadonly'@'%';"
+	CREATE_DB_SQL="DROP DATABASE IF EXISTS $DB_NAME; CREATE DATABASE $DB_NAME; USE $DB_NAME;"
 
 	echo "Creating database dump...";
 	mysqldump master --routines $DB_AUTH > $DB_DUMP_FILE; 
@@ -306,7 +306,6 @@ cmd_start() {
 	echo "- You are now on branch '$BRANCH'"
 	if [ "$needDB" = 'y' ]; then
 		echo "- A new database: '$BRANCH' was created, based on master"
-		echo "- A new sql file: $sqlFileName was created to store your migrations."
 	fi
 	echo ""
 	echo "Now, start committing on your feature. When done, use:"
